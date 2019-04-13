@@ -1,0 +1,7 @@
+# Large data files
+*.h5
+*.npy
+*.png
+
+*.pyc
+
