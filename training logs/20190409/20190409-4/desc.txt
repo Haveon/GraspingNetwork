@@ -1,0 +1,5 @@
+Arch: See arch.txt. Massively reduced the size of the network to 7M param from 50M param by reducing the number of kernels
+Loss: all-way-binary-crossentropy
+Metrics: single_accuracy (only calculate accuracy for the voxel in question)
+Optimizer: SGD with learning rate set to 1e-3, momentum set to 0.9
+Regularizer: L2 (1e-4)

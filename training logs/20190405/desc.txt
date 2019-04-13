@@ -1,0 +1,3 @@
+Arch: First 10 residual blocks from ResNet50 followed by 5 residual conv blocks. Then expand to volume and apply 3 residual 3Dconv blocks
+Loss: all-way-binary-crossentropy (mistake found: should have used sum; this run was done with the mean)
+Optimizer: SGD, lr=1e-3, momentum=0.5

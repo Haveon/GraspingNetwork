@@ -1,0 +1,5 @@
+Arch: First 10 residual blocks from ResNet50 followed by 5 residual conv blocks. Then expand to volume and apply 3 residual 3Dconv blocks
+Loss: all-way-binary-crossentropy
+Metrics: single_accuracy (only calculate accuracy for the voxel in question)
+Optimizer: Adam with learning rate set to 1e-6
+Regularizer: L1 (0.001)

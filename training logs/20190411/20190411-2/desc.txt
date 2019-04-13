@@ -1,0 +1,5 @@
+Arch: 7M param version, with tanh network output added to prior
+Loss: all-way-binary-crossentropy
+Metrics: single_accuracy (only calculate accuracy for the voxel in question)
+Optimizer: Adam with learning rate set to 1e-5, reducing learning rate on a plateau (patience 5)
+Regularizer: Dropout (0.8)
