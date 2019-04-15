@@ -1,0 +1,5 @@
+Arch: End-to-End with KernelNum set to 8, tanh output added to network
+Loss: all-way-binary-crossentropy
+Metrics: single_accuracy (only calculate accuracy for the voxel in question)
+Optimizer: Adam with learning rate set to 1e-3, reducing learning rate on a plateau (patience 5), clipnorm=10
+Regularizer: L2 (1e-4), Dropout (0.3)

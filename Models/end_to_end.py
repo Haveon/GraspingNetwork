@@ -6,7 +6,7 @@ from keras.regularizers import l1_l2
 
 from .neural_layers import residual_block, bilinear_resize, expand_dims
 
-def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM = 8):
+def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM = 16):
     inp = Input(shape=input_shape)
     x = Conv2D(KERNEL_NUM, 7, padding='same', strides=2, kernel_regularizer=l1_l2(l1=L1, l2=L2))(inp)
     x = BatchNormalization()(x)
