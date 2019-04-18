@@ -43,8 +43,8 @@ def data_generator(batch_size, imgs, pos_cubes, neg_cubes):
 def load_data():
     print('\tLoading Images')
     #train_images = np.zeros([31062,224,224,3], dtype=np.int8)
-    train_images = np.load('Data/for_training/training_image_data.npy')
-    val_images = np.load('Data/for_training/validation_image_data.npy')
+    train_images = np.load('Data/for_training/small_image_set.npy')
+    val_images = np.load('Data/for_training/validation_image_data.npy')[571:]
     val_images = np.concatenate([val_images,val_images],axis=0)
 
     print('\tPreprocessing Images')
@@ -52,41 +52,41 @@ def load_data():
     val_images = resnet50.preprocess_input(val_images)
 
     print('\tLoading Targets')
-    train_pos_cubes = np.load('Data/for_training/training_positive_cubes.npy').astype(np.int32)[:, 1:]
-    train_neg_cubes = np.load('Data/for_training/training_negative_cubes.npy').astype(np.int32)[:, 1:]
+    train_pos_cubes = np.load('Data/for_training/training_positive_cubes.npy').astype(np.int32)[:512, 1:]
+    train_neg_cubes = np.load('Data/for_training/training_negative_cubes.npy').astype(np.int32)[:512, 1:]
 
-    val_pos_cubes = np.load('Data/for_training/validation_positive_cubes.npy').astype(np.int32)[:, 1:]
-    val_neg_cubes = np.load('Data/for_training/validation_negative_cubes.npy').astype(np.int32)[:, 1:]
+    val_pos_cubes = np.load('Data/for_training/validation_positive_cubes.npy').astype(np.int32)[571:, 1:]
+    val_neg_cubes = np.load('Data/for_training/validation_negative_cubes.npy').astype(np.int32)[571:, 1:]
 
-    validation_cubes = np.zeros([2000, 8,8,8])
-    for i in range(1000):
+    validation_cubes = np.zeros([(1000-571)*2, 8,8,8])
+    for i in range(1000-571):
         pz,py,px = val_pos_cubes[i]
         validation_cubes[i, pz,py,px] = 1
         nz,ny,nx = val_neg_cubes[i]
-        validation_cubes[i+1000, nz,ny,nx] = 0.2
+        validation_cubes[i+(1000-571), nz,ny,nx] = 0.2
 
     return (train_images, val_images), (train_pos_cubes, train_neg_cubes), validation_cubes
 
 if __name__ == '__main__':
-    from Models.end_to_end import create_network
+    from Models.resnet_style import create_network
 
     # Hyperparameters
     BATCH_SIZE = 64
     L1_REGULARIZER = 0
-    L2_REGULARIZER = 1e-4
-    LEARNING_RATE = 1e-4
-    MOMENTUM = 0.9
-    DROPOUT_RATE = 0.3
+    L2_REGULARIZER = 0
+    LEARNING_RATE = 1e-5
+    MOMENTUM = 0
+    DROPOUT_RATE = 0
 
     # Callbacks
     csv_logger = CSVLogger('training.log')
     model_checkpoint = ModelCheckpoint('checkpoints/best_model.h5', save_best_only=True)
-    reduce_lr_on_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_delta=1e-4)
+    reduce_lr_on_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, min_delta=1e-4)
 
     print('Building Network')
     from keras.optimizers import SGD, Adam
     from Models.loss_and_metrics import single_accuracy, all_way_binary_cross_entropy
-    opt = Adam(lr=LEARNING_RATE, clipnorm=10)
+    opt = Adam(lr=LEARNING_RATE, clipnorm=1)
 
     (template, model) = prepare_model(create_network, input_shape=[224,224,3],
                                                       loss=all_way_binary_cross_entropy,
@@ -107,6 +107,6 @@ if __name__ == '__main__':
     print('Beginning Training')
     batch_per_epoch = (2*train_images.shape[0])/BATCH_SIZE
     model.fit_generator(datagen, steps_per_epoch=batch_per_epoch,
-                                 epochs=100,
+                                 epochs=1000,
                                  validation_data=(val_images,validation_cubes),
-                                 callbacks=[csv_logger, model_checkpoint, reduce_lr_on_plateau])
+                                 callbacks=[csv_logger, model_checkpoint])#, reduce_lr_on_plateau])

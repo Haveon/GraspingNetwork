@@ -8,7 +8,7 @@ from keras.regularizers import l1_l2
 
 from .neural_layers import residual_block, bilinear_resize, expand_dims
 
-def create_network(input_shape, prior, L1=0, L2=0, dropout=0):
+def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
     resnet = ResNet50(include_top=False, input_shape=input_shape)
     feature_model = Model(resnet.input, resnet.layers[80].output)
     for l in feature_model.layers:
@@ -25,16 +25,16 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0):
     x = Dropout(dropout)(x)
 
     # Trainable residual blocks
-    x = residual_block(x, bottleneck_kernels=64,
-                               out_kernels=256,
+    x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+                               out_kernels=KERNEL_NUM,
                                kernel_size=3,
                                identity=False,
                                L1=L1,
                                L2=L2)
     x = Dropout(dropout)(x)
     for i in range(5): # Originally 5
-        x = residual_block(x, bottleneck_kernels=64,
-                                    out_kernels=256,
+        x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+                                    out_kernels=KERNEL_NUM,
                                     kernel_size=3,
                                     identity=True,
                                     L1=L1,
@@ -48,8 +48,8 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0):
     x = concatenate([x,repeat], axis=3)
 
     # Trainable residual 3D blocks
-    x = residual_block(x, bottleneck_kernels=64,
-                                out_kernels=256,
+    x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+                                out_kernels=KERNEL_NUM,
                                 kernel_size=3,
                                 identity=False,
                                 conv=Conv3D,
@@ -58,8 +58,8 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0):
     x = Dropout(dropout)(x)
 
     for i in range(2): # Originally 2
-        x = residual_block(x, bottleneck_kernels=64,
-                                   out_kernels=256,
+        x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+                                   out_kernels=KERNEL_NUM,
                                    kernel_size=3,
                                    identity=True,
                                    conv=Conv3D,
@@ -71,7 +71,7 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0):
     x = Lambda(lambda x: K.squeeze(x, axis=-1))(x)
 
     def add_prior(x, prior=prior):
-        prior = K.log(K.constant(K.cast_to_floatx(prior)) + K.epsilon())
+        prior = K.constant(K.cast_to_floatx(prior))
         prior = expand_dims(axis=0)(prior)
         prior = Lambda( lambda prior: K.tile( prior, (K.shape(x)[0], 1, 1, 1) ))(prior)
         return x + prior
