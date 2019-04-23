@@ -1,0 +1,2 @@
+expanding along 1st dimension instead of 3rd
+smaller network, strided conv layer is 128, no extra resnet blocks

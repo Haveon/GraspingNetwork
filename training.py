@@ -101,6 +101,8 @@ if __name__ == '__main__':
     kernel_num = config['architecture'].getint('kernel_num')
     if arch == 'resnet_style':
         from Models.resnet_style import create_network
+    elif arch == 'resnet_style_smaller':
+            from Models.resnet_style_smaller import create_network
     elif arch == 'end_to_end':
         from Models.end_to_end import create_network
     else:
@@ -149,6 +151,10 @@ if __name__ == '__main__':
                                                  min_delta=min_delta)
         callbacks.append(reduce_lr_on_plateau)
 
+    # Dataset names
+    train_set = config['training']['training_set']
+    val_set   = config['training']['validation_set']
+
     # Hyperparameters
     BATCH_SIZE = config['training'].getint('batch_size')
     val_set    = config['training']['validation_set']
@@ -170,8 +176,6 @@ if __name__ == '__main__':
                                                       kernel_num=kernel_num)
 
     print('Loading Data')
-    train_set = config['training']['training_set']
-    val_set   = config['training']['validation_set']
     images, cubes, validation_cubes = load_data(train_set, val_set)
     train_images, val_images = images
     train_pos_cubes, train_neg_cubes = cubes

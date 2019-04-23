@@ -18,28 +18,28 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
     features = feature_model(inp)
 
     # Downsampling
-    x = Conv2D(512, 3, padding='same', strides=2, kernel_regularizer=l1_l2(l1=L1, l2=L2))(features)
+    x = Conv2D(8, 3, padding='same', strides=2, kernel_regularizer=l1_l2(l1=L1, l2=L2))(features)
     x = BatchNormalization()(x)
     x = LeakyReLU()(x)
 
     x = Dropout(dropout)(x)
 
     # Trainable residual blocks
-    x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
-                               out_kernels=KERNEL_NUM,
-                               kernel_size=3,
-                               identity=False,
-                               L1=L1,
-                               L2=L2)
-    x = Dropout(dropout)(x)
-    for i in range(5): # Originally 5
-        x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
-                                    out_kernels=KERNEL_NUM,
-                                    kernel_size=3,
-                                    identity=True,
-                                    L1=L1,
-                                    L2=L2)
-        x = Dropout(dropout)(x)
+    # x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+    #                            out_kernels=KERNEL_NUM,
+    #                            kernel_size=3,
+    #                            identity=False,
+    #                            L1=L1,
+    #                            L2=L2)
+    # x = Dropout(dropout)(x)
+    # for i in range(1): # Originally 5
+    #     x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+    #                                 out_kernels=KERNEL_NUM,
+    #                                 kernel_size=3,
+    #                                 identity=True,
+    #                                 L1=L1,
+    #                                 L2=L2)
+    #     x = Dropout(dropout)(x)
 
     # Reshape to (None, 8,8,8, 1024)
     x = bilinear_resize((8,8))(x)
@@ -57,15 +57,15 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
                                 L2=L2)
     x = Dropout(dropout)(x)
 
-    for i in range(2): # Originally 2
-        x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
-                                   out_kernels=KERNEL_NUM,
-                                   kernel_size=3,
-                                   identity=True,
-                                   conv=Conv3D,
-                                   L1=L1,
-                                   L2=L2)
-    x = Dropout(dropout)(x)
+    # for i in range(1): # Originally 2
+    #     x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
+    #                                out_kernels=KERNEL_NUM,
+    #                                kernel_size=3,
+    #                                identity=True,
+    #                                conv=Conv3D,
+    #                                L1=L1,
+    #                                L2=L2)
+    # x = Dropout(dropout)(x)
 
     x = Conv3D(1, 3, padding='same', activation='tanh')(x)
     x = Lambda(lambda x: K.squeeze(x, axis=-1))(x)

@@ -1,0 +1,2 @@
+expanding along 1st dimension instead of 3rd
+smaller network, no extra resnet blocks

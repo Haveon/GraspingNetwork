@@ -1,0 +1,2 @@
+expanding along 1st dimension instead of 3rd
+smaller network, strided conv layer is 1 kernel, no extra resnet blocks, 4 kernels
