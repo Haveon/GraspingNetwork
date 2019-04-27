@@ -41,3 +41,23 @@ def bilinear_resize(size):
 
 def expand_dims(axis):
     return Lambda( lambda x: K.expand_dims(x, axis=axis) )
+
+def residual_stage(inp, kernel_num, iter, L1=0, L2=0, dropout=0, conv=Conv2D, initial_block_is_identity=False):
+    x = residual_block(inp, bottleneck_kernels=kernel_num//4,
+                               out_kernels=kernel_num,
+                               kernel_size=3,
+                               identity=initial_block_is_identity,
+                               conv=conv,
+                               L1=L1,
+                               L2=L2)
+    x = Dropout(dropout)(x)
+    for i in range(iter):
+        x = residual_block(x, bottleneck_kernels=kernel_num//4,
+                                    out_kernels=kernel_num,
+                                    kernel_size=3,
+                                    identity=True,
+                                    conv=conv,
+                                    L1=L1,
+                                    L2=L2)
+        x = Dropout(dropout)(x)
+    return x

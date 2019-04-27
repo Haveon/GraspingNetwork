@@ -18,7 +18,7 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
     features = feature_model(inp)
 
     # Downsampling
-    x = Conv2D(8, 3, padding='same', strides=2, kernel_regularizer=l1_l2(l1=L1, l2=L2))(features)
+    x = Conv2D(1, 3, padding='same', strides=2, kernel_regularizer=l1_l2(l1=L1, l2=L2))(features)
     x = BatchNormalization()(x)
     x = LeakyReLU()(x)
 

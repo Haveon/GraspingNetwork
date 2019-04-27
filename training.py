@@ -91,6 +91,25 @@ def load_data(train_set, val_set):
 
     return (train_images, val_images), (train_pos_cubes, train_neg_cubes), validation_cubes
 
+def load_network(arch):
+    if arch == 'resnet_style':
+        from Models.resnet_style import create_network
+    elif arch == 'resnet_style_smaller':
+            from Models.resnet_style_smaller import create_network
+    elif arch == 'resnet_style_smaller_split':
+            from Models.resnet_style_smaller_split import create_network
+    elif arch == 'end_to_end':
+        from Models.end_to_end import create_network
+    elif arch == 'end_to_end_sep':
+        from Models.end_to_end_sep import create_network
+    elif arch == 'simplest':
+        from Models.simplest import create_network
+    elif arch == 'simplest_2':
+        from Models.simplest_2 import create_network
+    else:
+        raise ValueError('{} is not a valid architecture'.format(arch))
+    return create_network
+
 if __name__ == '__main__':
     import configparser
     config = configparser.ConfigParser()
@@ -99,14 +118,7 @@ if __name__ == '__main__':
     # Architecture
     arch = config['architecture']['architecture']
     kernel_num = config['architecture'].getint('kernel_num')
-    if arch == 'resnet_style':
-        from Models.resnet_style import create_network
-    elif arch == 'resnet_style_smaller':
-            from Models.resnet_style_smaller import create_network
-    elif arch == 'end_to_end':
-        from Models.end_to_end import create_network
-    else:
-        raise ValueError('{} is not a valid architecture'.format(arch))
+    create_network = load_network(arch)
 
     # Optimizer
     opt_name      = config['optimizer']['optimizer']
