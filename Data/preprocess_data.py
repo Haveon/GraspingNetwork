@@ -185,6 +185,17 @@ def rotate_to_camera_coordinates(data, visualize=False):
         plt.suptitle('In Camera Coordinates')
     return
 
+def assign_voxels_to_position(data, voxel_centers):
+    position = data[['id', 'x', 'y', 'z']].values
+    cube = np.zeros([data.shape[0],4], dtype=np.int32)
+    for i in range(position.shape[0]):
+        ind = np.argmin(np.linalg.norm(voxel_centers - position[i,1:], axis=-1))
+        # Voxel values are set as X,Y,Z
+        voxel = np.unravel_index(ind, (8,8,8))
+        cube[i, 0] = position[i,0]
+        cube[i,1:] = voxel
+    return cube
+
 # ----------------------------------------------------------------------------
 
 # positive data is in millimeters
@@ -222,3 +233,20 @@ rotate_to_camera_coordinates(negative_data)
 
 positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_camera_coordinates.csv')
 negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_camera_coordinates.csv')
+
+dx = (positive_data.x.max() - positive_data.x.min())/8
+dy = (positive_data.y.max() - positive_data.y.min())/8
+dz = (positive_data.z.max() - positive_data.z.min())/8
+xs = [positive_data.x.min() + dx/2 + i*dx for i in range(8)]
+ys = [positive_data.y.min() + dy/2 + i*dy for i in range(8)]
+zs = [positive_data.z.min() + dz/2 + i*dz for i in range(8)]
+X,Y,Z = np.meshgrid(xs,ys,zs, indexing='ij')
+voxel_centers = np.stack([X,Y,Z], axis=-1)
+
+positive_voxel_indeces = assign_voxels_to_position(positive_data, voxel_centers)
+negative_voxel_indeces = assign_voxels_to_position(negative_data, voxel_centers)
+
+np.savetxt('cubes/2percent_removed/positive_position_cube_compact.csv',
+            positive_voxel_indeces, fmt='%d', delimiter=',', header='id,x,y,z')
+np.savetxt('cubes/2percent_removed/negative_position_cube_compact.csv',
+            negative_voxel_indeces, fmt='%d', delimiter=',', header='id,x,y,z')
