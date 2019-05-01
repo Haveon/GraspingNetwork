@@ -225,6 +225,9 @@ negative_data = negative_data[negative_data.id.isin(ids)]
 extract_axis_angle(positive_data)
 extract_axis_angle(negative_data)
 
+positive_data = positive_data.sort_values(by='id')
+negative_data = negative_data.sort_values(by='id')
+
 positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_table_coordinates.csv')
 negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_table_coordinates.csv')
 
