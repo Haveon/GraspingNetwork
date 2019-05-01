@@ -250,3 +250,5 @@ np.savetxt('cubes/2percent_removed/positive_position_cube_compact.csv',
             positive_voxel_indeces, fmt='%d', delimiter=',', header='id,x,y,z')
 np.savetxt('cubes/2percent_removed/negative_position_cube_compact.csv',
             negative_voxel_indeces, fmt='%d', delimiter=',', header='id,x,y,z')
+np.savetxt('cubes/2percent_removed/voxel_centers.csv', voxel_centers.reshape([512,3]),
+            delimiter=',', header='x,y,z')
