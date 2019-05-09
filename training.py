@@ -42,24 +42,24 @@ def data_generator(batch_size, imgs, pos_cubes, neg_cubes):
 
 def load_data(train_set, val_set):
     print('\tLoading Targets')
-    train_pos_cubes = np.load('Data/for_training/training_positive_cubes.npy').astype(np.int32)[:, 1:]
-    train_neg_cubes = np.load('Data/for_training/training_negative_cubes.npy').astype(np.int32)[:, 1:]
+    train_pos_cubes = np.load('Data/for_training/compact/training_positive_cubes.npy').astype(np.int32)[:, 1:]
+    train_neg_cubes = np.load('Data/for_training/compact/training_negative_cubes.npy').astype(np.int32)[:, 1:]
 
-    val_pos_cubes = np.load('Data/for_training/validation_positive_cubes.npy').astype(np.int32)[:, 1:]
-    val_neg_cubes = np.load('Data/for_training/validation_negative_cubes.npy').astype(np.int32)[:, 1:]
+    val_pos_cubes = np.load('Data/for_training/compact/validation_positive_cubes.npy').astype(np.int32)[:, 1:]
+    val_neg_cubes = np.load('Data/for_training/compact/validation_negative_cubes.npy').astype(np.int32)[:, 1:]
 
     print('\tLoading Images')
     #train_images = np.zeros([31062,224,224,3], dtype=np.int8)
     if train_set=='small':
-        train_images = np.load('Data/for_training/small_image_set.npy')
+        train_images = np.load('Data/for_training/compact/small_image_set.npy')
         train_pos_cubes = train_pos_cubes[:512]
         train_neg_cubes = train_neg_cubes[:512]
     elif train_set=='full':
-        train_images = np.load('Data/for_training/training_image_data.npy')
+        train_images = np.load('Data/for_training/compact/training_image_data.npy')
     else:
         raise ValueError('{} is not a valid training_set'.format(train_set))
 
-    val_images = np.load('Data/for_training/validation_image_data.npy')
+    val_images = np.load('Data/for_training/compact/validation_image_data.npy')
 
     if val_set=='random':
         val_images = val_images[571:]
@@ -106,6 +106,10 @@ def load_network(arch):
         from Models.simplest import create_network
     elif arch == 'simplest_2':
         from Models.simplest_2 import create_network
+    elif arch == 'resnet_style_smaller_split_no_prior':
+        from Models.resnet_style_smaller_split_no_prior import create_network
+    elif arch == 'simple_smaller_split_no_prior':
+        from Models.simple_smaller_split_no_prior import create_network
     else:
         raise ValueError('{} is not a valid architecture'.format(arch))
     return create_network
@@ -184,7 +188,7 @@ if __name__ == '__main__':
                                                       L1=L1_REGULARIZER,
                                                       L2=L2_REGULARIZER,
                                                       dropout=DROPOUT_RATE,
-                                                      prior=np.load('Data/for_training/prior_pos.npy'),
+                                                      prior=np.load('Data/for_training/prior_compact.npy'),
                                                       kernel_num=kernel_num)
 
     print('Loading Data')

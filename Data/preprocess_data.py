@@ -228,14 +228,14 @@ extract_axis_angle(negative_data)
 positive_data = positive_data.sort_values(by='id')
 negative_data = negative_data.sort_values(by='id')
 
-positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_table_coordinates.csv')
-negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_table_coordinates.csv')
+positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_table_coordinates.csv', index=False)
+negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_table_coordinates.csv', index=False)
 
 rotate_to_camera_coordinates(positive_data)
 rotate_to_camera_coordinates(negative_data)
 
-positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_camera_coordinates.csv')
-negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_camera_coordinates.csv')
+positive_data.to_csv('matched_up_data/2percent_removed/matched_pos_data_in_camera_coordinates.csv', index=False)
+negative_data.to_csv('matched_up_data/2percent_removed/matched_neg_data_in_camera_coordinates.csv', index=False)
 
 dx = (positive_data.x.max() - positive_data.x.min())/8
 dy = (positive_data.y.max() - positive_data.y.min())/8

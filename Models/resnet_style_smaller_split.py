@@ -35,9 +35,9 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
 
         x = residual_stage(x, KERNEL_NUM//8, iter=5, L1=L1, L2=L2, dropout=dropout, initial_block_is_identity=True)
         x = bilinear_resize((8,8))(x)
-        x = expand_dims(axis=1)(x)
+        x = expand_dims(axis=3)(x)
         features_at_depth.append(x)
-    x = concatenate(features_at_depth, axis=1)
+    x = concatenate(features_at_depth, axis=3)
 
     # Trainable residual 3D blocks
     x = residual_block(x, bottleneck_kernels=KERNEL_NUM//4,
