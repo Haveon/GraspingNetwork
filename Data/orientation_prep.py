@@ -15,7 +15,7 @@ def fib_spiral(N):
     xs,ys = np.zeros(N), np.zeros(N)
     xs[1:N-1], ys[1:N-1] = (i+6)/(N+11), frac_part(i/GOLDEN)
     xs[N-1] = 1
-    
+
     theta, phi = lambert_equal_area_proj(xs,ys)
     return theta,phi
 
@@ -23,7 +23,7 @@ def spherical_to_cartesian(r,theta,phi):
     return r*np.sin(phi)*np.cos(theta), r*np.sin(phi)*np.sin(theta), r*np.cos(phi)
 
 if __name__ == '__main__':
-    N = 1000
+    N = 1024
     theta,phi = fib_spiral(N)
 
     fig = plt.figure()
