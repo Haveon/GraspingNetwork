@@ -1,6 +1,7 @@
 from keras.utils import multi_gpu_model
 from keras.applications import resnet50
 from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
+from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 import numpy as np
 
@@ -19,34 +20,34 @@ def prepare_model(create_network, input_shape, loss, optimizer, metrics, prior, 
     model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
     return (template_model, model)
 
-def data_generator(batch_size, imgs, pos_cubes, neg_cubes):
+def data_generator(batch_size, imgs, pos_cubes):
     total_num = imgs.shape[0]
-    half_batch = batch_size//2
     shuffled_indeces = np.arange(total_num)
+    prep = ImageDataGenerator(width_shift_range=20, height_shift_range=20, zoom_range=0.1, rotation_range=22)
     while True:
         np.random.shuffle(shuffled_indeces)
-        for i in range(total_num//half_batch):
-            current_indeces = shuffled_indeces[i*half_batch:(i+1)*half_batch]
+        for i in range(total_num):
+            current_indeces = shuffled_indeces[i*batch_size:(i+1)*batch_size]
             current_images = imgs[current_indeces]
+            if current_images.shape[0]!=batch_size:
+                continue
 
-            batch_images = np.concatenate([current_images, current_images], axis=0)
+            batch_images = np.zeros_like(current_images)
+            for j in range(batch_images.shape[0]):
+                trans_img = prep.random_transform(current_images[j])
+                batch_images[j] = trans_img
 
-            batch_cubes = np.zeros([2*current_indeces.shape[0],8,8,8])
+            batch_cubes = np.zeros([current_indeces.shape[0],8,8,8])
             for j,cur_ind in enumerate(current_indeces):
                 pz,py,px = pos_cubes[cur_ind]
-                nz,ny,nx = neg_cubes[cur_ind]
                 batch_cubes[j, px,py,pz] = 1
-                batch_cubes[half_batch+j, nx,ny,nz] = 0.2
 
             yield batch_images, batch_cubes
 
 def load_data(train_set, val_set):
     print('\tLoading Targets')
     train_pos_cubes = np.load('Data/for_training/compact/training_positive_cubes.npy').astype(np.int32)[:, 1:]
-    train_neg_cubes = np.load('Data/for_training/compact/training_negative_cubes.npy').astype(np.int32)[:, 1:]
-
     val_pos_cubes = np.load('Data/for_training/compact/validation_positive_cubes.npy').astype(np.int32)[:, 1:]
-    val_neg_cubes = np.load('Data/for_training/compact/validation_negative_cubes.npy').astype(np.int32)[:, 1:]
 
     print('\tLoading Images')
     #train_images = np.zeros([31062,224,224,3], dtype=np.int8)
@@ -64,32 +65,27 @@ def load_data(train_set, val_set):
     if val_set=='random':
         val_images = val_images[571:]
         val_pos_cubes = val_pos_cubes[571:]
-        val_neg_cubes = val_neg_cubes[571:]
         total_num = 1000-571
     elif val_set=='object':
         val_images = val_images[:571]
         val_pos_cubes = val_pos_cubes[:571]
-        val_neg_cubes = val_neg_cubes[:571]
         total_num = 571
     elif val_set=='full':
         total_num = 1000
     else:
         raise ValueError('{} is not a valid validation_set'.format(val_set))
-    val_images = np.concatenate([val_images,val_images],axis=0)
 
     print('\tPreprocessing Images')
     train_images = resnet50.preprocess_input(train_images)
     val_images = resnet50.preprocess_input(val_images)
 
     print('\tProcessing Validation Set')
-    validation_cubes = np.zeros([total_num*2, 8,8,8])
+    validation_cubes = np.zeros([total_num, 8,8,8])
     for i in range(total_num):
         pz,py,px = val_pos_cubes[i]
         validation_cubes[i, px,py,pz] = 1
-        nz,ny,nx = val_neg_cubes[i]
-        validation_cubes[i+total_num, nx,ny,nz] = 0.2
 
-    return (train_images, val_images), (train_pos_cubes, train_neg_cubes), validation_cubes
+    return (train_images, val_images), train_pos_cubes, validation_cubes
 
 def load_network(arch):
     if arch == 'resnet_style':
@@ -180,10 +176,10 @@ if __name__ == '__main__':
 
 
     print('Building Network')
-    from Models.loss_and_metrics import single_accuracy, all_way_binary_cross_entropy
+    from Models.loss_and_metrics import single_accuracy, dense_binary_cross_entropy
 
     (template, model) = prepare_model(create_network, input_shape=[224,224,3],
-                                                      loss=all_way_binary_cross_entropy,
+                                                      loss=dense_binary_cross_entropy,
                                                       optimizer=opt,
                                                       metrics=[single_accuracy],
                                                       GPUs=1,
@@ -196,13 +192,13 @@ if __name__ == '__main__':
     print('Loading Data')
     images, cubes, validation_cubes = load_data(train_set, val_set)
     train_images, val_images = images
-    train_pos_cubes, train_neg_cubes = cubes
+    train_pos_cubes = cubes
 
     print('Configuring Generator')
-    datagen = data_generator(BATCH_SIZE, train_images, train_pos_cubes, train_neg_cubes)
+    datagen = data_generator(BATCH_SIZE, train_images, train_pos_cubes)
 
     print('Beginning Training')
-    batch_per_epoch = (2*train_images.shape[0])/BATCH_SIZE
+    batch_per_epoch = (train_images.shape[0])/BATCH_SIZE
     model.fit_generator(datagen, steps_per_epoch=batch_per_epoch,
                                  epochs=1000,
                                  validation_data=(val_images,validation_cubes),

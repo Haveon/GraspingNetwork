@@ -21,7 +21,7 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
     x = MaxPooling2D()(features)
     x = Dropout(dropout)(x)
 
-    x = Conv2D(KERNEL_NUM//8, 3, kernel_regularizer=l1_l2(l1=L1, l2=L2))(x)
+    x = Conv2D(KERNEL_NUM//8, 1, kernel_regularizer=l1_l2(l1=L1, l2=L2))(x)
     x = BatchNormalization()(x)
     x = LeakyReLU()(x)
 
@@ -33,7 +33,7 @@ def create_network(input_shape, prior, L1=0, L2=0, dropout=0, KERNEL_NUM=64):
         x = BatchNormalization()(x)
         x = LeakyReLU()(x)
 
-        for j in range(1):
+        for j in range(2):
             x = Conv2D(KERNEL_NUM//8, 3, kernel_regularizer=l1_l2(l1=L1, l2=L2))(x)
             x = BatchNormalization()(x)
             x = LeakyReLU()(x)
