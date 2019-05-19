@@ -116,6 +116,9 @@ def make_quaternion_from_axis_angle(axis, angle):
     Angle must be in radians
     Axis must have norm 1
     """
+    if angle > np.pi:
+        angle = 2*np.pi - angle
+        axis = -1*axis
     q0 = np.cos(angle/2)
     q = axis*np.sin(angle/2)
     return np.array([q0,q[0],q[1],q[2]])
@@ -155,7 +158,8 @@ def rotate_to_camera_coordinates(data, visualize=False):
     rot1 = make_quaternion_from_axis_angle(np.array([1,0,0]), np.deg2rad(-102))
     rot2 = make_quaternion_from_axis_angle(np.array([0,1,0]), np.deg2rad(-0.9))
     rot3 = make_quaternion_from_axis_angle(np.array([0,0,1]), np.deg2rad(-135))
-    table_to_camera = multiply_quaternions(rot3, multiply_quaternions(rot2,rot1))*np.array([1,-1,-1,-1])
+    camera_to_table = multiply_quaternions(rot3, multiply_quaternions(rot2,rot1))
+    table_to_camera = camera_to_table*np.array([1,-1,-1,-1])
     vec_to_cam = np.array([-0.353906, 0.286732, 0.2275])
 
     position = data[['x','y','z']].values.copy()
@@ -169,7 +173,7 @@ def rotate_to_camera_coordinates(data, visualize=False):
 
         new_pos = rotate_vector(pos - vec_to_cam, table_to_camera)
         q = make_quaternion_from_axis_angle(rot, rot_mag)
-        new_q = multiply_quaternions(table_to_camera, q)
+        new_q = multiply_quaternions(camera_to_table, q)
         new_rot, new_rot_mag = make_axis_angle_from_quaternion(new_q)
 
         position[i] = new_pos
