@@ -85,7 +85,30 @@ def assign_sphere_position(data, theta_anchor, phi_anchor, gamma_anchor):
     orient = np.stack([ids,indeces,gindeces]).T
     return orient
 
+d_ang = np.pi/32
+nodes_th = np.arange(-np.pi, np.pi, d_ang)
+nodes_ph = np.arange(     0, np.pi, d_ang)
+nodes_ps = np.arange(-np.pi, np.pi, d_ang)
+
+THETA, PHI, PSI = np.meshgrid(nodes_th, nodes_ph, nodes_ps)
+
+def distance(point):
+    d_th = np.abs(THETA - point[0])
+    d_ph = np.abs(PHI - point[1])
+    d_ps = np.abs(PSI - point[2])
+    d_th = np.where(d_th>np.pi, 2*np.pi - d_th, d_th)
+    d_ph = np.where(d_ph>(np.pi/2), np.pi - d_ph, d_ph)
+    d_ps = np.where(d_ps>np.pi, 2*np.pi - d_ps, d_ps)
+    ss = d_th**2 + d_ph**2 + d_ps**2
+    return np.sqrt(ss)
+
+flat_theta = THETA.flatten()
+flat_phi   = PHI.flatten()
+flat_psi   = PSI.flatten()
+flat_coords = np.stack([flat_theta, flat_phi, flat_psi], axis=-1)
+
 # ----------------------------------------------------------------------------
+from collections import defaultdict
 import pandas as pd
 if False:
     viz()
@@ -97,6 +120,7 @@ negative_data = pd.read_csv('matched_up_data/2percent_removed/matched_neg_data_i
 rotation = positive_data[['id','rx', 'ry', 'rz', 'rot_mag']].values
 ids,rx,ry,rz,mag = rotation[:,0],rotation[:,1],rotation[:,2],rotation[:,3],rotation[:,4]
 eulers = np.zeros([rx.shape[0],3])
+keep_dict = defaultdict(list)
 for i in range(rx.shape[0]):
     axis = np.array([rx[i],ry[i],rz[i]])
     angle = mag[i]
@@ -106,74 +130,32 @@ for i in range(rx.shape[0]):
     q = make_quaternion_from_axis_angle(axis, angle)
     eul = make_euler_angles_from_quaternion(q)
     eulers[i] = eul
+    dist = distance(eul)
+    index = np.argmin(dist.flatten())
+    keep_dict[tuple(flat_coords[index])].append(ids[i])
 
-xlim = [-2.5,2.2]
-ylim = [1.30, 1.60]
+data = pd.DataFrame({'id': ids,
+                     'x': positive_data.x, 'y': positive_data.y, 'z': positive_data.z,
+                     'theta': eulers[:,0], 'phi': eulers[:,1], 'psi': eulers[:,2]})
 
-def rotate_z(theta):
-    return np.array([[np.cos(theta), -np.sin(theta), 0],[np.sin(theta), np.cos(theta), 0],[0,0,1]])
-def rotate_y(theta):
-    return np.array([[np.cos(theta),0,np.sin(theta)],[0,1,0],[-np.sin(theta), 0, np.cos(theta)]])
-def rotate_x(theta):
-    return np.array([[1,0,0],[0, np.cos(theta), -np.sin(theta)],[0, np.sin(theta), np.cos(theta)]])
+ids_to_keep = []
+keys_to_keep = []
+voxel_index = []
+i = 0
+for key in keep_dict:
+    pop = len(keep_dict[key])
+    if pop>3:
+        ids_to_keep += keep_dict[key]
+        keys_to_keep.append(key)
+        voxel_index+=[i]*pop
+        i+=1
 
-eulers = pd.DataFrame({'theta': eulers[:,0], 'phi': eulers[:,1], 'psi': eulers[:,2], 'x': positive_data.x.values, 'y': positive_data.y.values, 'z': positive_data.z.values})
-mask = (eulers.theta>xlim[0])&(eulers.theta<xlim[1])&(eulers.phi>ylim[0])&(eulers.phi<ylim[1])
-red_eulers = eulers[mask]
-print(red_eulers.shape)
-test_angles = red_eulers.sample(1000).values
+rot_vox_centers = np.array(keys_to_keep)
+np.savetxt('sphere/2percent_removed/rot_voxel_center.csv', rot_vox_centers, delimiter=',', header='theta,phi,psi')
+id_mask = data.id.isin(ids_to_keep)
+rot_data = data[id_mask]
 
-rot1 = rotate_x(np.deg2rad(-102))
-rot2 = rotate_y(np.deg2rad(-0.9))
-rot3 = rotate_z(np.deg2rad(-135))
-R = rot3 @ rot2 @ rot1
-
-offset = np.array([-0.353906, 0.286732, 0.2275])
-# ax = plt.figure().add_subplot(111, projection='3d')
-tmp_r = np.zeros([test_angles.shape[0],3,3])
-count=0
-for theta,phi,psi,x,y,z in test_angles:
-    rot = R @ rotate_z(psi) @ rotate_x(phi) @ rotate_z(theta)
-    o = (rot @ np.array([[1,0,0],[0,1,0],[0,0,1]])).T
-    # p = (R @ np.array([[x],[y],[z]])).T + offset
-    # for i in range(3):
-    #     vec = 0.005*rot[:,i] + p
-    #     ax.plot(*np.concatenate([p,vec]).T,c=('black' if i==2 else ('blue' if i==1 else 'red')))
-    tmp_r[count] = rot
-    count+=1
-
-# for x,y,z in zip([0.05,0,0],[0,0.05,0],[0,0,0.05]):
-#     ax.plot([0,x],[0,y],[0,z])
-# plt.title('pos')
-# ax.set_aspect(1)
-# ax.set_xlim([-0.1,0.1])
-# ax.set_ylim([-0.1,0.1])
-# ax.set_zlim([0,0.2])
-# plt.show()
-
-ax = plt.figure().add_subplot(111, projection='3d')
-ax.scatter(*tmp_r[:,:,0].T)
-plt.title('X')
-
-ax = plt.figure().add_subplot(111, projection='3d')
-ax.scatter(*tmp_r[:,:,1].T)
-plt.title('Y')
-
-ax = plt.figure().add_subplot(111, projection='3d')
-ax.scatter(*tmp_r[:,:,2].T)
-plt.title('Z')
-plt.show()
-
-# theta_anchor, phi_anchor = fib_spiral(1024)
-# gamma_anchor = np.linspace(0,2*np.pi,130)[1:-1]
-# positive_orient = assign_sphere_position(positive_data, theta_anchor, phi_anchor, gamma_anchor)
-# negative_orient = assign_sphere_position(negative_data, theta_anchor, phi_anchor, gamma_anchor)
-#
-# np.savetxt('sphere/2percent_removed/positive_sphere_compact.csv',
-#             positive_orient, fmt='%d', delimiter=',', header='id,sphere,gamma')
-# np.savetxt('sphere/2percent_removed/negative_sphere_compact.csv',
-#             negative_orient, fmt='%d', delimiter=',', header='id,sphere,gamma')
-# np.savetxt('sphere/2percent_removed/sphere_centers.csv', np.stack([theta_anchor,phi_anchor]).T,
-#             delimiter=',', header='theta,phi')
-# np.savetxt('sphere/2percent_removed/gamma.csv', gamma_anchor,
-#             delimiter=',', header='anchor')
+position_cubes = pd.read_csv('cubes/2percent_removed/positive_position_cube_compact.csv')
+cubes = position_cubes[id_mask][['x', 'y', 'z']].values
+binned_data = np.stack([ids_to_keep, voxel_index, cubes[:,0], cubes[:,1], cubes[:,2]], axis=-1)
+np.savetxt('sphere/2percent_removed/rotation_targets.csv', binned_data, delimiter=',', header='ids,rot_voxel,cube_x,cube_y,cube_z', fmt='%d')
